@@ -1,0 +1,63 @@
+Ты абсолютно прав. Мониторинг и "руки" (tasks.py) готовы, но "мозг" (Ollama) еще нужно связать с этой инфраструктурой. 
+
+**Мозг** — это сервис `ollama`, который мы пробросили через порт `11434`. Теперь нам нужен **"Нейронный мост"**, который будет брать текст от `stt.py` (или из Telegram), отправлять его в Ollama и на основе ответа вызывать команды из `tasks.py`.
+
+### Новый файл: `/root/ponytail/brain.py`
+Этот скрипт — ядро ассистента.
+
+```python
+import requests
+import json
+from tasks import phone_exec, click, speak
+
+# Адрес локальной Ollama (через проброшенный порт)
+OLLAMA_URL = "http://localhost:11434/api/generate"
+
+def ask_brain(prompt):
+    """Отправляет запрос в модель и получает ответ"""
+    payload = {
+        "model": "llama3", # или твоя модель
+        "prompt": f"Ты — ассистент на телефоне. Отвечай коротко. Если нужно действие, пиши в формате ACTION:command. Твой запрос: {prompt}",
+        "stream": False
+    }
+    response = requests.post(OLLAMA_URL, json=payload)
+    return response.json()['response']
+
+def process_action(text):
+    """Парсинг ответа модели и выполнение"""
+    if "ACTION:" in text:
+        command = text.split("ACTION:")[1].strip()
+        print(f"Brain wants to execute: {command}")
+        # Здесь можно добавить защиту, чтобы LLM не вызвала опасные команды
+        phone_exec(command) 
+    else:
+        # Если действий нет, просто говорим в телефон
+        speak(text)
+
+# Пример использования
+if __name__ == "__main__":
+    user_input = "Открой Telegram"
+    ai_response = ask_brain(user_input)
+    print(f"AI: {ai_response}")
+    process_action(ai_response)
+```
+
+### Как это объединяется:
+
+1.  **Голос:** `stt.py` слушает -> передает текст в `brain.py`.
+2.  **Мозг:** `brain.py` шлет текст в `Ollama` -> получает ответ с инструкцией (например: `ACTION:monkey -p org.telegram.messenger 1`).
+3.  **Руки:** `brain.py` передает `ACTION` в `tasks.py` -> `tasks.py` шлет команду на телефон.
+
+### Твой финальный "Ponytail" стек:
+
+*   **Монитор:** `watchdog.py` (держит канал связи).
+*   **Исполнитель:** `tasks.py` (отправляет команды в Termux).
+*   **Мозг:** `brain.py` (коннектор к Ollama).
+*   **Уши:** `stt.py` (распознавание).
+
+**Почему это круто:**
+Ты можешь менять модель в `brain.py` (с `llama3` на `mistral` или `phi3`), просто поменяв одну строку. Если LLM "тупит" или галлюцинирует, ты просто правишь системный промпт в `brain.py`.
+
+**Готов деплоить этот "Мозг"?** Скрипты готовы, тебе осталось только выбрать, какой моделью будет пользоваться Ollama (рекомендую `llama3` или `phi3:mini` для скорости). 
+
+*На какой модели сейчас сидишь?*

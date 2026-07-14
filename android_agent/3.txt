@@ -1,0 +1,62 @@
+Этот скрипт — твой «хранитель канала». Он не просто проверяет соединение, он **принудительно переподнимает** его, если туннель отвалился.
+
+### `watchdog.py` для `/root/ponytail/`
+
+```python
+import subprocess
+import time
+import os
+
+# КОНФИГУРАЦИЯ
+# Команда, которая поднимает твой туннель
+TUNNEL_CMD = "ssh -f -N -L 2222:localhost:22 -L 11434:localhost:11434 -p 34002 sokolovanv@88.210.29.61"
+CHECK_PORT = 2222
+
+def is_tunnel_alive():
+    # Проверяем, слушается ли локальный порт 2222
+    result = subprocess.run(f"nc -z localhost {CHECK_PORT}", shell=True)
+    return result.returncode == 0
+
+def restart_tunnel():
+    print(f"[{time.ctime()}] Tunnel down! Restarting...")
+    # Убиваем старые зависшие процессы SSH на всякий случай
+    subprocess.run("pkill -f 'ssh -L 2222'", shell=True)
+    time.sleep(1)
+    # Запускаем туннель
+    subprocess.run(TUNNEL_CMD, shell=True)
+
+if __name__ == "__main__":
+    print("Watchdog started. Monitoring tunnel...")
+    while True:
+        if not is_tunnel_alive():
+            restart_tunnel()
+        time.sleep(30) # Проверка каждые 30 секунд
+```
+
+---
+
+### Как запустить всё «в один клик» на сервере:
+
+Создай один главный скрипт `start_ponytail.sh` в `/root/ponytail/`:
+
+```bash
+#!/bin/bash
+# Запуск монитора туннелей в фоне
+nohup python3 /root/ponytail/watchdog.py > /root/ponytail/watchdog.log 2>&1 &
+echo "Ponytail Watchdog started. Logs: /root/ponytail/watchdog.log"
+```
+
+### Итого: твоя папка `/root/ponytail/` должна выглядеть так:
+1. `tasks.py` — библиотека команд для телефона.
+2. `watchdog.py` — чтобы связь не обрывалась.
+3. `start_ponytail.sh` — общая кнопка запуска.
+4. `stt.py` — для голосового ввода (мы добавим его позже).
+
+**Что делать сейчас:**
+1. Создай эти файлы.
+2. Дай права на выполнение главному скрипту: `chmod +x /root/ponytail/start_ponytail.sh`.
+3. Запусти: `/root/ponytail/start_ponytail.sh`.
+
+**Твоя инфраструктура готова.** Теперь ты можешь заниматься делами, а сервер сам будет следить за тем, чтобы телефон был «на связи». Как будет время — просто поднимешь туннель и всё заработает само. 
+
+*Есть что-то еще, что мы забыли в "базу", или всё по Ponytail-методике?*

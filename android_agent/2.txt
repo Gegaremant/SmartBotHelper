@@ -1,0 +1,71 @@
+Вот готовый `tasks.py` для твоего сервера. Он спроектирован как **универсальная библиотека**. 
+
+Скопируй этот код и создай файл командой:
+`cat > /root/ponytail/tasks.py <<EOF`
+*(Вставь код, нажми Enter и затем `Ctrl+D`)*
+
+```python
+import subprocess
+import time
+import os
+
+# КОНФИГУРАЦИЯ
+SSH_PORT = "2222"
+PHONE_USER = "sokolovanv" # Укажи имя пользователя в Termux
+PHONE_HOST = "localhost"
+TASK_FILE = "/sdcard/task.txt"
+
+def phone_exec(cmd):
+    """Отправляет команду на телефон через SSH"""
+    ssh_cmd = f"ssh -p {SSH_PORT} {PHONE_HOST} 'echo \"{cmd}\" > {TASK_FILE}'"
+    subprocess.run(ssh_cmd, shell=True)
+    print(f"DEBUG: Sent command: {cmd}")
+
+def get_screenshot(filename="screen.png"):
+    """Делает скриншот и забирает его на сервер"""
+    phone_exec("screencap -p /sdcard/screen.png")
+    time.sleep(1.5) # Ждем, пока Android запишет файл
+    subprocess.run(f"scp -P {SSH_PORT} {PHONE_HOST}:/sdcard/screen.png {filename}", shell=True)
+    print(f"SUCCESS: Screenshot saved as {filename}")
+
+def click(x, y):
+    """Клик по координатам"""
+    phone_exec(f"input tap {x} {y}")
+
+def scroll(x1, y1, x2, y2):
+    """Свайп: от (x1,y1) до (x2,y2)"""
+    phone_exec(f"input swipe {x1} {y1} {x2} {y2} 500")
+
+def speak(text):
+    """Голосовой вывод через Android TTS"""
+    # Требует termux-api
+    phone_exec(f"termux-tts-speak '{text}'")
+
+def open_app(package_name):
+    """Открытие приложения"""
+    phone_exec(f"monkey -p {package_name} -c android.intent.category.LAUNCHER 1")
+
+if __name__ == "__main__":
+    # ТЕСТОВАЯ ЛОГИКА
+    print("Ponytail Tasks Library Loaded.")
+    # Пример: speak("Система инициализирована")
+```
+
+### Как теперь проверить связь (после создания файла):
+В терминале сервера введи:
+```bash
+python3 /root/ponytail/tasks.py
+```
+Если ошибок нет — библиотека готова. 
+
+Теперь ты можешь в любом своем скрипте (или в `bot.py`) просто делать:
+```python
+from ponytail.tasks import click, get_screenshot
+click(500, 1000)
+get_screenshot("test.png")
+```
+
+**Важное замечание:** 
+Если при `scp` или `ssh` он **всё еще требует пароль**, значит, ты не сделал `ssh-copy-id`. Сделай это сейчас, иначе никакая автоматизация не взлетит!
+
+**Нужно ли мне подготовить код для `watchdog.py`, чтобы туннель не падал?** Это последний штрих для стабильности.

@@ -1,0 +1,126 @@
+services:
+  vless-client:
+    image: teddysun/xray:latest
+    container_name: vless-client
+    restart: unless-stopped
+    ports:
+      - "1080:1080"
+      - "1081:1081"
+    volumes:
+      - "./xray_client:/etc/xray"
+
+  ollama:
+    image: ollama/ollama:0.30.9
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - "ollama_data:/root/.ollama"
+    environment:
+      - "http_proxy=http://vless-client:1081"
+      - "https_proxy=http://vless-client:1081"
+      - "no_proxy=localhost,127.0.0.1,0.0.0.0,ollama"
+      - "OLLAMA_FLASH_ATTENTION=false"
+      - "OLLAMA_CUDA_COMPUTE_CAPABILITIES=61"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    depends_on:
+      - "vless-client"
+
+  tg-admin-bot:
+    build: ./tg_admin_bot
+    container_name: tg-admin-bot
+    restart: unless-stopped
+    environment:
+      - "TELEGRAM_BOT_TOKEN=${TG_ADMIN_BOT_TOKEN}"
+      - "ALLOWED_TELEGRAM_ID=${ALLOWED_TELEGRAM_ID}"
+      - "http_proxy=http://vless-client:1081"
+      - "https_proxy=http://vless-client:1081"
+      - "no_proxy=localhost,127.0.0.1,0.0.0.0,ollama"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "./xray_client:/etc/xray"
+      - "/home/projects:/workspace"
+      - ".:/app/project_root:rw"
+
+  vscode-ide:
+    image: codercom/code-server:latest
+    container_name: vscode-ide
+    restart: unless-stopped
+    ports:
+      - "36490:8080"
+    environment:
+      - "PASSWORD=${VSCODE_PASSWORD:-secret}"
+      - "OLLAMA_HOST=http://ollama:11434"
+      - "http_proxy=http://vless-client:1081"
+      - "https_proxy=http://vless-client:1081"
+      - "no_proxy=localhost,127.0.0.1,0.0.0.0,ollama"
+      - 'EXTENSIONS_GALLERY={"serviceUrl":"https://marketplace.visualstudio.com/_apis/public/gallery","cacheUrl":"https://vscode.blob.core.windows.net/gallery/index","itemUrl":"https://marketplace.visualstudio.com/items","controlUrl":"","recommendationsUrl":""}'
+    volumes:
+      - "/home/projects:/home/coder/project"
+      - "./code-server-config:/home/coder/.config"
+    depends_on:
+      - "ollama"
+
+  tg-coder-bot:
+    build: ./tg_coder_bot
+    container_name: tg-coder-bot
+    restart: unless-stopped
+    environment:
+      - "TELEGRAM_BOT_TOKEN=${TG_CODER_BOT_TOKEN}"
+      - "ALLOWED_TELEGRAM_ID=${ALLOWED_TELEGRAM_ID}"
+      - "OLLAMA_HOST=http://ollama:11434"
+      - "OLLAMA_API_BASE=http://ollama:11434"
+      - "http_proxy=http://vless-client:1081"
+      - "https_proxy=http://vless-client:1081"
+      - "no_proxy=localhost,127.0.0.1,0.0.0.0,ollama"
+    volumes:
+      - "/home/projects:/workspace"
+    depends_on:
+      - "ollama"
+
+  openwebui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: openwebui
+    restart: unless-stopped
+    ports:
+      - "36486:8080"
+    environment:
+      - "OLLAMA_BASE_URL=http://ollama:11434"
+      - "WEBUI_AUTH=True"
+      - "http_proxy=http://vless-client:1081"
+      - "https_proxy=http://vless-client:1081"
+      - "no_proxy=localhost,127.0.0.1,0.0.0.0,ollama"
+    volumes:
+      - "./webui_data:/app/backend/data"
+    depends_on:
+      - "ollama"
+
+
+  guacd:
+    image: guacamole/guacd
+    container_name: guacd
+    restart: unless-stopped
+
+  guacamole:
+    image: guacamole/guacamole
+    container_name: guacamole
+    restart: unless-stopped
+    ports:
+      - "36495:8080"
+    environment:
+      - GUACD_HOSTNAME=guacd
+      - GUACD_PORT=4822
+    volumes:
+      - ./guacamole_config:/etc/guacamole
+
+volumes:
+  ollama_data:
+    external: true
+    name: gegaremant_helper_ollama_data

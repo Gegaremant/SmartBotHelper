@@ -1,0 +1,21 @@
+<user-mapping>
+    <!-- 
+      Логин для входа в веб-интерфейс Guacamole.
+      ЗАМЕНИТЕ ПАРОЛЬ НА ВАШ РЕАЛЬНЫЙ ПАРОЛЬ ОТ СЕРВЕРА!
+    -->
+    <authorize username="sokolovanv" password="ParallelCrossing5%">
+        
+        <!-- Подключение к RDP серверу хоста (Ubuntu) -->
+        <connection name="Ubuntu Server RDP">
+            <protocol>rdp</protocol>
+            <param name="hostname">172.17.0.1</param>
+            <param name="port">3389</param>
+            <!-- Автоматическая передача логина и пароля из веб-интерфейса в RDP -->
+            <param name="username">${GUAC_USERNAME}</param>
+            <param name="password">${GUAC_PASSWORD}</param>
+            <param name="ignore-cert">true</param>
+            <param name="security">any</param>
+        </connection>
+
+    </authorize>
+</user-mapping>
