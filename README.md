@@ -95,3 +95,8 @@ A button-based Telegram admin interface:
 2. Выполните скрипт установки Docker: `chmod +x install_llm.sh && ./install_llm.sh`
 3. Создайте файл `.env` со своими токенами и паролями.
 4. Выполните запуск: `docker compose up -d --build`
+
+### Release Notes
+- Fixed docker-compose error when updating Ollama settings in 	g_admin_bot by switching to SSH remote execution.
+- Fixed issue where created Admins were not displaying in 	g_admin_bot UI.
+

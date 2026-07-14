@@ -300,11 +300,11 @@ async def cb_ollama_env(cq: types.CallbackQuery):
     key, val = data.rsplit("_", 1) # splits from the right: ["OLLAMA_KEEP_ALIVE", "60m"]
     
     await cq.answer("Применяю...", show_alert=False)
-    msg = await cq.message.answer(f"⏳ Обновляю `.env` и перезапускаю Ollama ({key}={val}) ...", parse_mode="Markdown")
+    msg = await cq.message.answer(f"🔄 Обновляю `.env` и рестартую Ollama ({key}={val}) ...", parse_mode="Markdown")
     
     env_path = "/app/project_root/.env"
     if not os.path.exists(env_path):
-        await msg.edit_text("❌ Файл .env не найден в /app/project_root (убедитесь что примонтирован).")
+        await msg.edit_text("❌ Файл .env не найден в /app/project_root (проверьте бинды директорий).")
         return
     
     try:
@@ -323,8 +323,8 @@ async def cb_ollama_env(cq: types.CallbackQuery):
                 new_lines.append(line)
                 
         if not found and not (val == "all" and key == "CUDA_VISIBLE_DEVICES"):
-            if new_lines and not new_lines[-1].endswith("\\n"):
-                new_lines[-1] += "\\n"
+            if new_lines and not new_lines[-1].endswith("\n"):
+                new_lines[-1] += "\n"
             new_lines.append(f"{key}={val}\n")
             
         with open(env_path, "w", encoding="utf-8") as f:
@@ -335,30 +335,14 @@ async def cb_ollama_env(cq: types.CallbackQuery):
         return
         
     try:
-        proc = await asyncio.create_subprocess_shell(
-            "docker-compose -f /app/project_root/docker-compose.yml up -d ollama", 
-            stdout=asyncio.subprocess.PIPE, 
-            stderr=asyncio.subprocess.PIPE
-        )
-        out, err = await proc.communicate()
-        if proc.returncode == 0:
-            await msg.edit_text(f"✅ Успешно!\n`{key}={val}`\nКонтейнер Ollama перезапущен.", parse_mode="Markdown")
-        else:
-            await msg.edit_text(f"❌ Ошибка docker-compose:\n```text\n{err.decode('utf-8', errors='replace')}\n```", parse_mode="Markdown")
+        async with asyncssh.connect(srv_ip, port=ssh_port, username=ssh_login, password=ssh_password, known_hosts=None) as conn:
+            res = await conn.run("cd /root/SmartBotHelper && docker compose up -d ollama")
+            if res.exit_status == 0:
+                await msg.edit_text(f"✅ Успешно!\n`{key}={val}`\nНастройки Ollama применены.", parse_mode="Markdown")
+            else:
+                await msg.edit_text(f"❌ Ошибка docker compose на хосте:\n```text\n{res.stderr}\n```", parse_mode="Markdown")
     except Exception as e:
-        await msg.edit_text(f"❌ Ошибка выполнения системной команды: {e}")
-
-# --- LOGS ---
-@dp.message(F.text == "📋 Логи и Отчеты")
-async def logs_menu(m: types.Message):
-    if m.from_user.id not in ALLOWED_IDS: return
-    b = InlineKeyboardBuilder()
-    for c in ["ollama", "tg-coder-bot", "openwebui"]:
-        b.button(text=f"Смотреть {c}", callback_data=f"logshow_{c}")
-    b.button(text="Настроить автовыгрузку", callback_data="log_setup")
-    b.button(text="Отправить отчет сейчас", callback_data="send_report_now")
-    b.adjust(1)
-    await m.answer("Управление логами:", reply_markup=b.as_markup())
+        await msg.edit_text(f"❌ Ошибка перезапуска контейнера по SSH: {e}")
 
 @dp.callback_query(F.data.startswith("logshow_"))
 async def cb_logshow(cq: types.CallbackQuery):
@@ -837,7 +821,11 @@ async def update_env_allowed_ids():
         print(f"Error saving .env: {e}")
 
 async def restart_bots_for_admins():
-    await asyncio.create_subprocess_shell("docker restart tg-coder-bot tg-admin-bot")
+    try:
+        async with asyncssh.connect(srv_ip, port=ssh_port, username=ssh_login, password=ssh_password, known_hosts=None) as conn:
+            await conn.run("docker restart tg-coder-bot tg-admin-bot")
+    except Exception as e:
+        print(f"Error restarting bots: {e}")
 
 @dp.callback_query(F.data == "add_proxy_user")
 async def cb_add_proxy_user(cq: types.CallbackQuery):
