@@ -36,6 +36,11 @@ A button-based Telegram admin interface:
 - **Backup 💾**: Instant ZIP archive creation of all critical settings (`.env`, `docker-compose.yml`, bot DBs, VLESS configs) sent directly to the Telegram chat.
 - **Access Control 👥**: Manage bot administrators directly from Telegram.
 
+#### 5. Android Agent (Katya) 📱
+- **Voice Assistant**: Native Android application acting as a fully voice-controlled assistant.
+- **Direct LLM Integration**: Connects directly to the local Ollama instance (using SSH tunnel or direct IP) avoiding cloud API limits.
+- **Kotlin Multiplatform**: The UI is built using Kotlin Multiplatform and Compose.
+
 ### 🚀 Deployment
 
 1. Prepare a Linux server (e.g., Ubuntu) with an NVIDIA GPU.
@@ -76,6 +81,11 @@ A button-based Telegram admin interface:
 - **Удаленные сервера 🌐**: Встроенный SSH-клиент, позволяющий добавлять сторонние узлы и просматривать списки запущенных Docker-контейнеров на них прямо из Telegram.
 - **Резервное копирование 💾**: Мгновенное создание ZIP-архива всех критических настроек (`.env`, `docker-compose.yml`, базы ботов, конфиги VLESS) с отправкой в Telegram-чат.
 - **Управление доступом 👥**: Добавление и удаление администраторов для ботов.
+
+#### 5. Мобильный Агент (Катя) 📱
+- **Голосовой Ассистент**: Нативное Android-приложение, выступающее в роли голосового помощника на телефоне.
+- **Прямая интеграция с LLM**: Подключается напрямую к локальному серверу Ollama (через SSH туннель или IP-адрес) без облачных лимитов.
+- **Kotlin Multiplatform**: Интерфейс приложения написан с использованием современных технологий KMP и Compose.
 
 ### 🚀 Развертывание
 
