@@ -37,6 +37,7 @@ A button-based Telegram admin interface:
 - **Access Control 👥**: Manage bot administrators directly from Telegram.
 
 #### 5. Android Agent (Katya) 📱
+- **Standalone Project**: Katya is developed in a separate repository. **[View Katya Repository](https://github.com/Gegaremant/Katya)**.
 - **Voice Assistant**: Native Android application acting as a fully voice-controlled assistant.
 - **Direct LLM Integration**: Connects directly to the local Ollama instance (using SSH tunnel or direct IP) avoiding cloud API limits.
 - **Kotlin Multiplatform**: The UI is built using Kotlin Multiplatform and Compose.
@@ -83,6 +84,7 @@ A button-based Telegram admin interface:
 - **Управление доступом 👥**: Добавление и удаление администраторов для ботов.
 
 #### 5. Мобильный Агент (Катя) 📱
+- **Отдельный проект**: Катя разрабатывается в отдельном репозитории. **[Посмотреть репозиторий Katya](https://github.com/Gegaremant/Katya)**.
 - **Голосовой Ассистент**: Нативное Android-приложение, выступающее в роли голосового помощника на телефоне.
 - **Прямая интеграция с LLM**: Подключается напрямую к локальному серверу Ollama (через SSH туннель или IP-адрес) без облачных лимитов.
 - **Kotlin Multiplatform**: Интерфейс приложения написан с использованием современных технологий KMP и Compose.
